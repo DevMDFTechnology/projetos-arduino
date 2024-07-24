@@ -14,7 +14,7 @@ String dadosSerial = "";
 void setup() {
   Serial.begin(9600);
   Serial.println("Modulo Transmissor");
-  Serial.println("Digite um Valor na Serial para enviar os dados ...");
+  Serial.println("Digite um Valor na Serial para enviar os dados...");
   pinMode(SSerialTxControl, OUTPUT);
   RS485Serial.begin(4800);
 }
@@ -22,21 +22,21 @@ void setup() {
 void loop() {
   while (Serial.available() > 0) {
     char c = Serial.read();
-    if (isPrintable(c)) {
-      dadosSerial += c;
+    // Acumula os caracteres digitados na string dadosSerial
+    dadosSerial += c;
+    
+    // Se encontrar um caractere de nova linha ('\n'), termina a entrada
+    if (c == '\n') {
+      enviarDados(dadosSerial); // Envia os dados acumulados
+      dadosSerial = ""; // Limpa a string para a próxima entrada
     }
-  }
-
-  if (dadosSerial.length() > 0) {
-    enviarDados(dadosSerial); // Adiciona o sufixo "X" aos dados antes de enviar
-    dadosSerial = "";
   }
 }
 
 void enviarDados(String dados) {
   digitalWrite(SSerialTxControl, RS485Transmit);
-  RS485Serial.println(dados);
-  RS485Serial.flush();
+  RS485Serial.println(dados); // Envia os dados pela RS485
+  RS485Serial.flush(); // Garante que todos os dados sejam enviados
   digitalWrite(SSerialTxControl, RS485Receive);
-  Serial.println("Dados enviados: " + dados);
+  Serial.println("Dados enviados: " + dados); // Exibe os dados enviados via Serial monitor
 }
