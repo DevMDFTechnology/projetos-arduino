@@ -37,35 +37,33 @@ void processInput(String input) {
   // Remove espaços em branco extras
   input.trim();
   
-  // Verifica se a entrada não está vazia e termina com ','
-  if (input.length() > 0 && input.endsWith(",")) {
-    // Remove a vírgula final
-    input = input.substring(0, input.length() - 1);
+  // Substitui todas as '/' por '' (vazio)
+  input.replace("/", " ");
+  
+  // Substitui todas as ',' por '' (vazio)
+  input.replace(",", " ");
+  
+  // Verifica se a entrada não está vazia
+  if (input.length() > 0) {
+    // Divide a entrada em tokens separados por ',' (caso haja algum restante, mas agora deveria estar vazio)
+    int startPos = 0;
+    int commaPos = input.indexOf(',', startPos);
+    while (commaPos != -1) {
+      String codigo = input.substring(startPos, commaPos);
+      bufferPrint(codigo, tempoAnterior);
+      startPos = commaPos + 1;
+      commaPos = input.indexOf(',', startPos);
+    }
     
-    // Verifica se a entrada começa com '/' e termina com ','
-    if (input.startsWith("/") && input.endsWith(",")) {
-      // Remove '/' do início
-      input = input.substring(1);
-      
-      // Divide a entrada em tokens separados por ','
-      int startPos = 0;
-      int commaPos = input.indexOf(',', startPos);
-      while (commaPos != -1) {
-        String codigo = input.substring(startPos, commaPos);
-        bufferPrint(codigo, tempoAnterior);
-        startPos = commaPos + 1;
-        commaPos = input.indexOf(',', startPos);
-      }
-      
-      // Processa o último código depois da última vírgula
-      if (startPos < input.length()) {
-        String codigo = input.substring(startPos);
-        bufferPrint(codigo, tempoAnterior);
-      }
-    } 
-    Serial.println("Buffer: " + input);
+    // Processa o último código depois da última vírgula (mas não deve haver mais vírgulas)
+    if (startPos < input.length()) {
+      String codigo = input.substring(startPos);
+      bufferPrint(codigo, tempoAnterior);
+    }
   } 
+  Serial.println("Buffer: " + input);
 }
+
 
 void bufferPrint(String codigo, unsigned long leituraAnterior){
   // Verifica se passaram 500 ms desde a última impressão
@@ -76,10 +74,7 @@ void bufferPrint(String codigo, unsigned long leituraAnterior){
       String codigoLimpo = codigo.substring(0, codigo.length() - 1) + "R ";
       // Imprime o código limpo
       Serial.print(codigoLimpo);
-    } else {
-      Serial.println("Código inválido: " + codigo);
     }
-    
     tempoAnterior = millis(); // Atualiza o tempo anterior para o atual
   }
 }
