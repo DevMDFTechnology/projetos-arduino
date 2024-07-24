@@ -70,13 +70,6 @@ void processInput(String input) {
 void bufferPrint(String codigo, unsigned long leituraAnterior){
   // Verifica se passaram 500 ms desde a última impressão
   if (millis() - tempoAnterior >= leituraAnterior && codigo.length() > 0) {
-    // Verifica se a string tem o formato esperado
-    if (codigo.endsWith("X")) {
-      // Extrai o código entre '/' e 'X' e adiciona 'R '
-      String codigoLimpo = codigo.substring(0, codigo.length() - 1) + "R ";
-      // Imprime o código limpo
-      Serial.print(codigoLimpo);
-    }
     tempoAnterior = millis(); // Atualiza o tempo anterior para o atual
   }
 }
