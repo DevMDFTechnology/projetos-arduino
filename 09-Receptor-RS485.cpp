@@ -42,6 +42,8 @@ void processInput(String input) {
   
   // Substitui todas as ',' por '' (vazio)
   input.replace(",", " ");
+
+  input.replace("X", "R");
   
   // Verifica se a entrada não está vazia
   if (input.length() > 0) {
