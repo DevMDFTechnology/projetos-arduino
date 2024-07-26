@@ -1,11 +1,11 @@
 #include <SoftwareSerial.h>
 
-unsigned long tempoAnterior = 0;
 #define Pino_RS485_RX 10 // DO (Direct Output)
 #define Pino_RS485_TX 11 // DI (Direct Input)
 #define SSerialTxControl 3
-#define RS485Transmit HIGH
-#define RS485Receive LOW
+
+bool RS485Transmit = HIGH;
+bool RS485Receive = LOW;
 
 SoftwareSerial RS485Serial(Pino_RS485_RX, Pino_RS485_TX);
 
@@ -16,7 +16,7 @@ void setup() {
   Serial.println("Módulo Receptor");
   Serial.println("Aguardando dados...");
   pinMode(SSerialTxControl, OUTPUT);
-  digitalWrite(SSerialTxControl, RS485Receive);
+  digitalWrite(SSerialTxControl, RS485Receive); // Configura como Receptor
   RS485Serial.begin(4800);
 }
 
@@ -26,8 +26,8 @@ void loop() {
       char inChar = (char)RS485Serial.read();
       inputString += inChar;
       if (inChar == '\n') {
-        processInput(inputString);
-        inputString = "";
+        processInput(inputString); // Processa os dados recebidos
+        inputString = ""; // Limpa a string de entrada
       }
     }
   }
@@ -38,38 +38,39 @@ void processInput(String input) {
   input.trim();
   
   // Substitui todas as '/' por '' (vazio)
-  input.replace("/", " ");
+  input.replace("/", "");
   
-  // Substitui todas as ',' por '' (vazio)
-  input.replace(",", " ");
-
-  input.replace("X", "R");
-  
-  // Verifica se a entrada não está vazia
-  if (input.length() > 0) {
-    // Divide a entrada em tokens separados por ',' (caso haja algum restante, mas agora deveria estar vazio)
-    int startPos = 0;
-    int commaPos = input.indexOf(',', startPos);
-    while (commaPos != -1) {
-      String codigo = input.substring(startPos, commaPos);
-      bufferPrint(codigo, tempoAnterior);
-      startPos = commaPos + 1;
-      commaPos = input.indexOf(',', startPos);
-    }
-    
-    // Processa o último código depois da última vírgula (mas não deve haver mais vírgulas)
-    if (startPos < input.length()) {
-      String codigo = input.substring(startPos);
-      bufferPrint(codigo, tempoAnterior);
-    }
-  } 
-  Serial.println("Buffer: " + input);
+  // Separa os códigos por vírgula
+  int startPos = 0;
+  int commaPos = input.indexOf(',', startPos);
+  while (commaPos != -1) {
+    String codigo = input.substring(startPos, commaPos);
+    bufferPrint(codigo, 500); // Processa e envia os dados recebidos
+    startPos = commaPos + 1;
+    commaPos = input.indexOf(',', startPos);
+  }
 }
 
+void bufferPrint(String codigo, unsigned long intervalo) {
+  // Remove espaços em branco extras
+  codigo.trim();
+  
+  // Substitui 'X' por 'R'
+  codigo.replace("X", "R");
+  codigo.replace("x", "r");
 
-void bufferPrint(String codigo, unsigned long leituraAnterior){
-  // Verifica se passaram 500 ms desde a última impressão
-  if (millis() - tempoAnterior >= leituraAnterior && codigo.length() > 0) {
-    tempoAnterior = millis(); // Atualiza o tempo anterior para o atual
+  // Imprime o código
+  Serial.print("Codigo Enviado: ");
+  Serial.println(codigo);
+  
+  // Aguarda o intervalo desejado usando millis()
+  unsigned long startTime = millis();
+  while (millis() - startTime < intervalo) {
+    // Aguarda passivamente até completar o intervalo
   }
+
+  digitalWrite(SSerialTxControl, RS485Transmit); // Define como Transmissor
+  RS485Serial.println(codigo); // Envia os dados pela RS485
+  RS485Serial.flush(); // Garante que todos os dados sejam enviados
+  digitalWrite(SSerialTxControl, RS485Receive); // Define como Receptor novamente
 }
