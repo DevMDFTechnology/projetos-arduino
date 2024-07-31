@@ -1,178 +1,71 @@
-//------------------------------------------------------------------------------
-// Include the IRremote library header
-//
 #include <IRremote.h>
-IRsend irsend;//Cria o objeto irsend do tipo IRsend
 
-//------------------------------------------------------------------------------
-// Tell IRremote which Arduino pin is connected to the IR Receiver (TSOP4838)
-//
-int recvPin = 11;
-IRrecv irrecv(recvPin);
+// Definições de pinos
+const int receiverPin = 11;    // Pino do receptor IR
+const int transmitterPin = 3;  // Pino do emissor IR
 
-//+=============================================================================
-// Configure the Arduino
-//
-void  setup ( )
-{
-  Serial.begin(9600);   // Status message will be sent to PC at 9600 baud
-  irrecv.enableIRIn();  // Start the receiver
+IRrecv irrecv(receiverPin); // Objeto IRrecv para receber sinais IR
+IRsend irsend; // Objeto IRsend para enviar sinais IR
+
+decode_results results; // Variável para armazenar os resultados da decodificação
+
+unsigned long tvCode = 0; // Variável para armazenar o código IR da televisão
+unsigned long otherCode = 0; // Variável para armazenar o código IR do outro controle
+
+void setup() {
+  Serial.begin(9600);  // Inicializa a comunicação serial
+  irrecv.enableIRIn(); // Habilita o receptor IR
+  pinMode(transmitterPin, OUTPUT);  // Configura o pino do emissor IR como saída
 }
 
-//+=============================================================================
-// Display IR code
-//
-void  ircode (decode_results *results)
-{
-  // Panasonic has an Address
-  if (results->decode_type == PANASONIC) {
-    Serial.print(results->address, HEX);
-    Serial.print(":");
+void loop() {
+  // Parte 1: Capturar o botão do controle da televisão
+  if (irrecv.decode(&results)) {  // Se um sinal IR for recebido
+    tvCode = results.value;  // Armazena o valor do código IR capturado da televisão
+
+    // Exibe informações sobre o sinal recebido no monitor serial
+    Serial.print("TV Remote - Received ");
+    Serial.print(results.decode_type);
+    Serial.print(" : ");
+    Serial.print(tvCode, HEX);
+    Serial.print(" (");
+    Serial.print(results.bits);
+    Serial.println(" bits)");
+
+    delay(100); // Aguarda um breve intervalo antes de receber o próximo sinal
+    irrecv.resume(); // Reinicia o receptor para aguardar o próximo sinal
   }
 
-  // Print Code
-  Serial.print(results->value, HEX);
-}
+  // Parte 2: Capturar o botão do outro controle
+  if (irrecv.decode(&results)) {  // Se um sinal IR for recebido
+    otherCode = results.value;  // Armazena o valor do código IR capturado do outro controle
 
-//+=============================================================================
-// Display encoding type
-//
-void  encoding (decode_results *results)
-{
-  switch (results->decode_type) {
-    default:
-    case UNKNOWN:      Serial.print("UNKNOWN");       break ;
-    case NEC:          Serial.print("NEC");           break ;
-    case SONY:         Serial.print("SONY");          break ;
-    case RC5:          Serial.print("RC5");           break ;
-    case RC6:          Serial.print("RC6");           break ;
-    case DISH:         Serial.print("DISH");          break ;
-    case SHARP:        Serial.print("SHARP");         break ;
-    case JVC:          Serial.print("JVC");           break ;
-    case SANYO:        Serial.print("SANYO");         break ;
-    case MITSUBISHI:   Serial.print("MITSUBISHI");    break ;
-    case SAMSUNG:      Serial.print("SAMSUNG");       break ;
-    case LG:           Serial.print("LG");            break ;
-    case WHYNTER:      Serial.print("WHYNTER");       break ;
-    case AIWA_RC_T501: Serial.print("AIWA_RC_T501");  break ;
-    case PANASONIC:    Serial.print("PANASONIC");     break ;
-    case DENON:        Serial.print("Denon");         break ;
-  }
-}
+    // Exibe informações sobre o sinal recebido no monitor serial
+    Serial.print("Other Remote - Received ");
+    Serial.print(results.decode_type);
+    Serial.print(" : ");
+    Serial.print(otherCode, HEX);
+    Serial.print(" (");
+    Serial.print(results.bits);
+    Serial.println(" bits)");
 
-//+=============================================================================
-// Dump out the decode_results structure.
-//
-void  dumpInfo (decode_results *results)
-{
-  // Check if the buffer overflowed
-  if (results->overflow) {
-    Serial.println("IR code too long. Edit IRremoteInt.h and increase RAWLEN");
-    return;
+    delay(100); // Aguarda um breve intervalo antes de receber o próximo sinal
+    irrecv.resume();  // Reinicia o receptor para aguardar o próximo sinal
   }
 
-  // Show Encoding standard
-  Serial.print("Encoding  : ");
-  encoding(results);
-  Serial.println("");
+  // Parte 3: Configurar esse valor no outro controle
+  if (tvCode != 0 && otherCode != 0) {
+    // Configura o código capturado do controle da televisão no outro controle (Arduino com emissor IR)
+    irsend.sendNEC(tvCode, results.bits);  // Envia o código IR da televisão para o outro controle
+    Serial.println("Configured TV Code on Other Remote");
 
-  // Show Code & length
-  Serial.print("Code      : ");
-  ircode(results);
-  Serial.print(" (");
-  Serial.print(results->bits, DEC);
-  Serial.println(" bits)");
-}
+    tvCode = 0;  // Reinicia a variável para evitar reenvios contínuos
+    otherCode = 0;  // Reinicia a variável do outro controle
 
-//+=============================================================================
-// Dump out the decode_results structure.
-//
-void  dumpRaw (decode_results *results)
-{
-  // Print Raw data
-  Serial.print("Timing[");
-  Serial.print(results->rawlen-1, DEC);
-  Serial.println("]: ");
-
-  for (int i = 1;  i < results->rawlen;  i++) {
-    unsigned long  x = results->rawbuf[i] * USECPERTICK;
-    if (!(i & 1)) {  // even
-      Serial.print("-");
-      if (x < 1000)  Serial.print(" ") ;
-      if (x < 100)   Serial.print(" ") ;
-      Serial.print(x, DEC);
-    } else {  // odd
-      Serial.print("     ");
-      Serial.print("+");
-      if (x < 1000)  Serial.print(" ") ;
-      if (x < 100)   Serial.print(" ") ;
-      Serial.print(x, DEC);
-      if (i < results->rawlen-1) Serial.print(", "); //',' not needed for last one
-    }
-    if (!(i % 8))  Serial.println("");
-  }
-  Serial.println("");                    // Newline
-}
-
-//+=============================================================================
-// Dump out the decode_results structure.
-//
-void  dumpCode (decode_results *results)
-{
-  // Start declaration
-  Serial.print("unsigned int  ");          // variable type
-  Serial.print("rawData[");                // array name
-  Serial.print(results->rawlen - 1, DEC);  // array size
-  Serial.print("] = {");                   // Start declaration
-
-  // Dump data
-  for (int i = 1;  i < results->rawlen;  i++) {
-    Serial.print(results->rawbuf[i] * USECPERTICK, DEC);
-    if ( i < results->rawlen-1 ) Serial.print(","); // ',' not needed on last one
-    if (!(i & 1))  Serial.print(" ");
+    delay(1000);  // Aguarda 1 segundo antes de enviar novamente (para evitar transmissões rápidas)
   }
 
-  // End declaration
-  Serial.print("};");  // 
-
-  // Comment
-  Serial.print("  // ");
-  encoding(results);
-  Serial.print(" ");
-  ircode(results);
-
-  // Newline
-  Serial.println("");
-
-  // Now dump "known" codes
-  if (results->decode_type != UNKNOWN) {
-
-    // Some protocols have an address
-    if (results->decode_type == PANASONIC) {
-      Serial.print("unsigned int  addr = 0x");
-      Serial.print(results->address, HEX);
-      Serial.println(";");
-    }
-
-    // All protocols have data
-    Serial.print("unsigned int  data = 0x");
-    Serial.print(results->value, HEX);
-    Serial.println(";");
-  }
-}
-
-//+=============================================================================
-// The repeating section of the code
-//
-void  loop ( )
-{
-  decode_results  results;        // Somewhere to store the results
-
-  if (irrecv.decode(&results)) {  // Grab an IR code
-    dumpInfo(&results);           // Output the results
-    dumpRaw(&results);            // Output the results in RAW format
-    dumpCode(&results);           // Output the results as source code
-    Serial.println("");           // Blank line between entries
-    irrecv.resume();              // Prepare for the next value
-  }
+  // Parte 4: Fazer a ação que foi definida no controle da televisão
+  // No caso do Arduino com emissor IR, a ação seria enviar o código IR para o dispositivo alvo (TV)
+  // Isso já está sendo feito na parte 3, onde enviamos o código IR da televisão para o outro controle
 }
