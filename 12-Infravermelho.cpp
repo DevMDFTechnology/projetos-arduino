@@ -14,19 +14,17 @@ IRsend irsend;
 
 void setup() {
   Serial.begin(9600);
-  pinMode(emissorIR, OUTPUT);
 }
 
 void loop() {
   switch(Serial.read()){
     case 'a':
+		  irsend.sendPanasonic(0x100BCBD, 48);
       digitalWrite(emissorIR, HIGH);
       delay(500);
       digitalWrite(emissorIR, LOW);
-      irsend.sendPanasonic(0x100BCBD, 48);
-      Serial.println("Dados Enviados!");
-      delay(40);
-      break;                                
+      Serial.println("Codigo Enviado");
+    delay(40);
   }
-  delay(5000);  //5 second delay between each signal burst
+    delay(5000);  //5 second delay between each signal burst
 }
