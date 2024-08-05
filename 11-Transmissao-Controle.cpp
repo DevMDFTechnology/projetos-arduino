@@ -1,92 +1,86 @@
-// INCLUINDO A BIBLIOTECA IRREMOTE
 #include <IRremote.h>
 
-// CHAMANDO O OBJETO
+#define PanasonicAddress      0x4004     // Endereço Panasonic (dados anteriores) 
+#define PanasonicPower        0x100BCBD  // Botão de energia Panasonic
+#define PanasonicVolumeUp     0x1000405  // Código para aumentar o volume
+#define PanasonicVolumeDown   0x1008485  // Código para diminuir o volume
+#define PanasonicChannelUp    0x1002C2D
+#define PanasonicChannelDown  0x100ACAD
+#define PanasonicMute         0x1004C4D
+#define PanasonicNum0         0x1009899
+#define PanasonicNum1         0x1000809
+#define PanasonicNum2         0x1008889
+#define PanasonicNum3         0x1004849
+#define PanasonicNum4         0x100C8C9
+#define PanasonicNum5         0x1002829
+#define PanasonicNum6         0x100A8A9
+#define PanasonicNum7         0x1006869
+#define PanasonicNum8         0x100E8E9
+#define PanasonicNum9         0x1001819
+
 IRsend irsend;
 
-// SETUP
-void setup() {
-  Serial.begin(9600); // Inicializa a Serial
+void setup()
+{
+  Serial.begin(9600);
 }
 
 void loop() {
-  // CONTROLA A TV SE TIVER DADOS NO SERIAL
   if (Serial.available() > 0) {
-    controlarTV();
-  }
-}
-
-// ENVIA OS DADOS
-void enviarDados(unsigned long hexControl) {
-  irsend.sendNEC(hexControl, 32); // Envia o código IR usando o protocolo NEC
-  delay(1000); // Espera 1 segundo entre envios
-}
-
-// FUNÇÃO PARA CONTROLAR A TV
-void controlarTV() {
-  char tecla = Serial.read(); // Captura o Serial para a Variavel Tecla
-
-  // CONDICIONAL PARA CONTROLAR A TV
-  switch (tecla) {
-    
-    // LIGAR E DESLIGAR
-    case 'P':
-      enviarDados(0x20DF10EF);
-      break;
-    
-    // NÚMEROS DE 0 A 9
-    case '0':
-      enviarDados(0x20DF08F7);
-      break;
-    case '1':
-      enviarDados(0x20DF8877);
-      break;
-    case '2':
-      enviarDados(0x20DF48B7);
-      break;
-    case '3':
-      enviarDados(0x20DFC837);
-      break;
-    case '4':
-      enviarDados(0x20DF28D7);
-      break;
-    case '5':
-      enviarDados(0x20DFA857);
-      break;
-    case '6':
-      enviarDados(0x20DF6897);
-      break;
-    case '7':
-      enviarDados(0x20DFE817);
-      break;
-    case '8':
-      enviarDados(0x20DF18E7);
-      break;
-    case '9':
-      enviarDados(0x20DF9867);
-      break;
-
-    // VOLUME
-    case '+':
-      enviarDados(0x20DF40BF);
-      break;
-    case '-':
-      enviarDados(0x20DFC03F);
-      break;
-
-    // CANAL +
-    case 'W':
-      enviarDados(0x20DF00FF);
-      break;
-
-    // CANAL -
-    case 'S':
-      enviarDados(0x20DF807F);
-      break;
-
-    // MUTE
-    case 'M':
-      enviarDados(0x20DF906F);
-      break;
+    char tecla = Serial.read();
+    switch (tecla) {
+      case 'P':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicPower);
+        break;
+      case '0':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum0);
+        break;
+      case '1':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum1);
+        break;
+      case '2':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum2);
+        break;
+      case '3':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum3);
+        break;
+      case '4':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum4);
+        break;
+      case '5':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum5);
+        break;
+      case '6':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum6);
+        break;
+      case '7':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum7);
+        break;
+      case '8':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum8);
+        break;
+      case '9':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicNum9);
+        break;
+      case '+':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicVolumeUp);
+        break;
+      case '-':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicVolumeDown);
+        break;
+      case 'W':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicChannelUp);
+        break;
+      case 'S':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicChannelDown);
+        break;
+      case 'M':
+        irsend.sendPanasonic(PanasonicAddress, PanasonicMute);
+        break;
+      default:
+        // Nenhuma ação para outros caracteres
+        break;
+    }
+    delay(1000); // Adiciona um delay para evitar múltiplos envios acidentais
   }
 }
